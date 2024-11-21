@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   MessageSquare,
   AlertTriangle,
@@ -19,7 +19,6 @@ import { Footer } from './components/Footer';
 import { useDarkMode } from './hooks/useDarkMode';
 import { OfacChecker } from './utils/ofacChecker';
 import { SDNList } from './components/SDNList';
-import { SDNStatus } from './types';
 import EntitySearch from './components/EntitySearch'; 
 
 const STORAGE_KEY = 'swift_messages';
@@ -119,135 +118,6 @@ export default function App() {
     initializeOfacChecker();
   }, []);
 
-  interface ParsedSwiftFile {
-    transaction_reference: string;
-    transaction_type: string;
-    transaction_date: string;
-    transaction_currency: string;
-    transaction_amount: string;
-    transaction_purpose: string;
-    sender_account: string;
-    sender_inn?: string | null;
-    sender_name: string;
-    sender_address: string;
-    sender_bank_code: string;
-    receiver_account: string;
-    receiver_transit_account: string | null;
-    receiver_bank_code: string | null;
-    receiver_bank_name: string | null;
-    receiver_name: string;
-    receiver_inn?: string | null;
-    receiver_kpp: string;
-    transaction_fees: string;
-    company_info?: {
-      CEO?: string;
-      Founders?: {
-        isCompany: boolean;
-        owner: string;
-        percentage: number | null;
-      }[];
-    };
-    receiver_info?: {
-      CEO?: string;
-      Founders?: {
-        isCompany: boolean;
-        owner: string;
-        percentage: number;
-        companyDetails?: {
-          CEO?: string;
-          Founders?: {
-            isCompany: boolean;
-            owner: string;
-            percentage: number;
-          }[];
-          inn?: string;
-          registrationDate: string | null;
-        };
-      }[];
-    };
-  }
-  
-  useEffect(() => {
-    const fetchParsedFiles = async () => {
-      try {
-        const response = await axios.get<Record<string, ParsedSwiftFile>>(
-          'http://localhost:3001/api/parsed-swift-files'
-        );
-        const parsedFiles = response.data;
-    
-        const loadedMessages = Object.entries(parsedFiles).map(([key, data]) => ({
-          id: key,
-          transactionRef: data.transaction_reference,
-          type: data.transaction_type,
-          date: data.transaction_date,
-          currency: data.transaction_currency,
-          amount: data.transaction_amount,
-          notes: data.transaction_purpose,
-          sender: {
-            account: data.sender_account,
-            inn: data.sender_inn || '',
-            name: data.sender_name,
-            address: data.sender_address,
-            bankCode: data.sender_bank_code,
-            sdnStatus: 'pending' as SDNStatus, // Ensure 'sdnStatus' uses SdnStatusType
-            company_details: data.company_info
-              ? {
-                  CEO: data.company_info.CEO,
-                  Founders: data.company_info.Founders?.map(founder => ({
-                    owner: founder.owner,
-                    percentage: founder.percentage ?? undefined,
-                    companyDetails: founder.companyDetails
-                      ? {
-                          CEO: founder.companyDetails.CEO,
-                          Founders: founder.companyDetails.Founders || [],
-                          inn: founder.companyDetails.inn,
-                          registrationDate: founder.companyDetails.registrationDate ?? undefined,
-                        }
-                      : undefined,
-                  })),
-                }
-              : undefined,
-          },
-          receiver: {
-            account: data.receiver_account,
-            transitAccount: data.receiver_transit_account || '',
-            bankCode: data.receiver_bank_code || '',
-            bankName: data.receiver_bank_name || '',
-            name: data.receiver_name,
-            inn: data.receiver_inn || '',
-            kpp: data.receiver_kpp,
-            sdnStatus: 'pending' as SDNStatus,
-            CEO: data.receiver_info?.CEO || '',
-            Founders: data.receiver_info?.Founders?.map(founder => ({
-              owner: founder.owner,
-              percentage: founder.percentage ?? undefined,
-              isCompany: founder.isCompany,
-              companyDetails: founder.companyDetails
-                ? {
-                    CEO: founder.companyDetails.CEO,
-                    Founders: founder.companyDetails.Founders || [],
-                    inn: founder.companyDetails.inn,
-                    registrationDate: founder.companyDetails.registrationDate ?? undefined,
-                  }
-                : undefined,
-            })) || [],
-          },
-          purpose: data.transaction_purpose,
-          fees: data.transaction_fees,
-          status: 'processing' as SwiftMessage['status'],
-          manuallyUpdated: false,
-        }));
-    
-        setMessages(loadedMessages);
-        setFilteredMessages(loadedMessages);
-      } catch (error) {
-        console.error('Error fetching parsed SWIFT files:', error);
-      }
-    };
-  
-    fetchParsedFiles();
-  }, []);  
-
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
     setFilteredMessages(messages);
@@ -332,7 +202,7 @@ export default function App() {
 
   const handleUpload = async (messageText: string, comments: string) => {
     try {
-      const response = await axios.post('http://localhost:3001/api/process-swift', {
+      const response = await axios.post(import.meta.env.VITE_BACKEND_URL2+'/api/process-swift', {
         message: messageText,
       });
 
@@ -414,7 +284,7 @@ export default function App() {
   const handleDeleteMessage = async (id: string) => {
     try {
         // Attempt to delete the message from the backend
-        await axios.delete(`http://localhost:3001/api/delete-message/${id}`);
+        await axios.delete(import.meta.env.VITE_BACKEND_URL2+`/api/delete-message/${id}`);
     } catch (error) {
         console.error('Error deleting message from backend:', error);
     } finally {
@@ -432,7 +302,7 @@ export default function App() {
 const handleStatusChange = async (id: string, status: SwiftMessage['status']) => {
   try {
       // Update the status in the backend
-      await axios.patch(`http://localhost:3001/api/update-status/${id}`, { status });
+      await axios.patch(import.meta.env.VITE_BACKEND_URL2+`/api/update-status/${id}`, { status });
 
       // Update the status in the frontend state
       setMessages((prev) =>
@@ -529,7 +399,7 @@ const handleStatusChange = async (id: string, status: SwiftMessage['status']) =>
         ) : currentPage === 'reports' ? (
           <Reports messages={messages} />
         ) : currentPage === 'sdn-list' ? (
-          <SDNList isDark={isDark} />
+          <SDNList  />
         ) : (
           <BlacklistManager
             entries={blacklist}

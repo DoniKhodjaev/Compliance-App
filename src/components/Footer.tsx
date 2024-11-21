@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function Footer() {
   return (
     <footer className="bg-[#008766] shadow-lg mt-auto">

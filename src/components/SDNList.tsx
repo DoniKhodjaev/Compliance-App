@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, Search } from 'lucide-react';
 import stringSimilarity from 'string-similarity';
@@ -17,7 +17,7 @@ const ENTRIES_PER_PAGE = 15;
 const FULL_NAME_THRESHOLD = 0.75;
 const PARTIAL_NAME_THRESHOLD = 0.45;
 
-export function SDNList({ isDark }: { isDark: boolean }) {
+export function SDNList() {
   const [entries, setEntries] = useState<SDNEntry[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -30,7 +30,7 @@ export function SDNList({ isDark }: { isDark: boolean }) {
 
   const fetchSDNList = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:5000/api/sdn-list');
+      const response = await axios.get(import.meta.env.VITE_BACKEND_URL1+'/api/sdn-list');
       setEntries(response.data);
     } catch (error) {
       console.error('Error fetching SDN list:', error);
@@ -39,7 +39,7 @@ export function SDNList({ isDark }: { isDark: boolean }) {
 
   const updateSDNList = () => {
     setIsUpdating(true);
-    axios.post('http://127.0.0.1:5000/api/update-sdn-list')
+    axios.post(import.meta.env.VITE_BACKEND_URL1+'/api/update-sdn-list')
       .then((response) => {
         console.log(response.data.status);
         fetchSDNList();  // Re-fetch the updated SDN list

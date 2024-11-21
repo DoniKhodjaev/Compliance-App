@@ -1,4 +1,3 @@
-import React from 'react';
 import { LayoutDashboard, ShieldAlert, BarChart3, Octagon, Search } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 

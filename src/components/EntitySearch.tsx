@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 import {
   ChevronDown,
@@ -60,7 +60,7 @@ const EntitySearch: React.FC = () => {
     setLoadingOrgInfo(true);
     try {
       const response = await axios.get(
-        `http://localhost:3001/api/search-orginfo?company_name=${orgInfoSearch}`
+        import.meta.env.VITE_BACKEND_URL2+`/api/search-orginfo?company_name=${orgInfoSearch}`
       );
       setOrgInfoResult(response.data);
       await checkCompliance(response.data);
@@ -76,7 +76,7 @@ const EntitySearch: React.FC = () => {
     setLoadingEgrul(true);
     try {
       const response = await axios.get(
-        `http://localhost:3001/api/search-egrul?inn=${egrulSearch}`
+        import.meta.env.VITE_BACKEND_URL2+`/api/search-egrul?inn=${egrulSearch}`
       );
       setEgrulResult(response.data);
       await checkCompliance(response.data);

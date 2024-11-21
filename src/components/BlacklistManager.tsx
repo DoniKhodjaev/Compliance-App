@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Plus, Trash2, Search, Edit2 } from 'lucide-react';
 import type { BlacklistEntry } from '../types';
 import { BlacklistModal } from './BlacklistModal';

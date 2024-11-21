@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { SwiftMessage } from '../types';
 import { Eye, Trash2 } from 'lucide-react';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
@@ -14,7 +14,6 @@ export function MessageList({
   messages = [],
   onViewMessage,
   onDeleteMessage,
-  onStatusChange,
 }: MessageListProps) {
   const [messageToDelete, setMessageToDelete] = useState<SwiftMessage | null>(null);
 

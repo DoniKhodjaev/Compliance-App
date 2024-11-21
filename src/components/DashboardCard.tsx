@@ -1,4 +1,4 @@
-import React from 'react';
+
 import type { DashboardCardProps } from '../types';
 
 export function DashboardCard({ title, value, icon: Icon, trend }: DashboardCardProps) {
