@@ -19,18 +19,21 @@ export class OfacChecker {
   // Initialize OFAC data from the provided JSON file
   static async initialize() {
     if (this.initialized) return; // Prevent re-initialization
-
+  
     try {
       const response = await fetch('/data/sdn_cache.json');
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.error('Failed to fetch sdn_cache.json:', response.status, response.statusText);
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
       this.ofacList = await response.json();
       this.initialized = true;
+      console.log('OFAC list initialized successfully.');
     } catch (error) {
       console.error('Failed to load OFAC list:', error);
     }
   }
+  
 
   /**
    * Check a name or entity against the OFAC list.
@@ -116,3 +119,4 @@ export class OfacChecker {
     return pairs;
   }
 }
+
