@@ -1,9 +1,13 @@
 interface SdnEntry {
+  uid: string;
   name: string;
-  name_variations: string[];
+  name_variations?: string[];
   type: string;
   date_of_birth?: string;
   id_number?: string; // Optional ID number for TIN comparison
+  addresses?: { city: string; country: string }[];
+  programs?: string[];
+  remarks?: string;
 }
 
 export class OfacChecker {
@@ -12,7 +16,7 @@ export class OfacChecker {
   private static FULL_NAME_THRESHOLD = 0.85; // Full name match threshold
   private static PARTIAL_NAME_THRESHOLD = 0.75; // Partial name match threshold
 
-  // Initialize OFAC data if not already loaded
+  // Initialize OFAC data from the provided JSON file
   static async initialize() {
     if (this.initialized) return; // Prevent re-initialization
 
@@ -31,42 +35,50 @@ export class OfacChecker {
   /**
    * Check a name or entity against the OFAC list.
    * @param searchText The text to search (name or entity).
-   * @returns Match details with score and type.
+   * @returns Match details with type and score.
    */
   static async checkName(searchText: string): Promise<{
     isMatch: boolean;
-    matchScore: number;
     matchedEntry?: SdnEntry;
-    matchType?: 'name';
+    matchType?: 'name' | 'alias';
+    matchScore?: number;
   }> {
-    await this.initialize(); // Ensure the list is loaded
+    await this.initialize(); // Ensure OFAC data is loaded
 
-    searchText = searchText?.toLowerCase().trim() || '';
+    searchText = searchText.toLowerCase().trim();
     let highestScore = 0;
     let matchedEntry: SdnEntry | undefined;
+    let matchType: 'name' | 'alias' | undefined;
 
     for (const entry of this.ofacList) {
-      // Calculate similarity for name
+      // Check the main name
       const fullNameScore = this.calculateSimilarity(searchText, entry.name.toLowerCase());
-      const variationScores = Array.isArray(entry.name_variations)
-        ? entry.name_variations.map(variation =>
-            this.calculateSimilarity(searchText, variation.toLowerCase())
-          )
-        : [];
-
-      const bestVariationScore = Math.max(fullNameScore, ...variationScores);
-      if (bestVariationScore > highestScore) {
-        highestScore = bestVariationScore;
+      if (fullNameScore > highestScore) {
+        highestScore = fullNameScore;
         matchedEntry = entry;
+        matchType = 'name';
+      }
+
+      // Check name variations (aliases)
+      if (entry.name_variations) {
+        for (const alias of entry.name_variations) {
+          const aliasScore = this.calculateSimilarity(searchText, alias.toLowerCase());
+          if (aliasScore > highestScore) {
+            highestScore = aliasScore;
+            matchedEntry = entry;
+            matchType = 'alias';
+          }
+        }
       }
     }
 
     const isMatch = highestScore >= this.FULL_NAME_THRESHOLD || highestScore >= this.PARTIAL_NAME_THRESHOLD;
+
     return {
       isMatch,
-      matchScore: highestScore,
       matchedEntry: isMatch ? matchedEntry : undefined,
-      matchType: 'name',
+      matchType: isMatch ? matchType : undefined,
+      matchScore: isMatch ? highestScore : undefined,
     };
   }
 
