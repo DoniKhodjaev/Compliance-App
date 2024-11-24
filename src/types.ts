@@ -17,13 +17,10 @@ export interface NameCheckResult {
   isMatch: boolean;
   matchScore: number;
   matchedName?: string;
-  matchType?: 'name' | 'address' | 'id' | 'other';
   details?: {
     type?: string;
     programs?: string[];
     remarks?: string;
-    addresses?: string[];
-    ids?: string[];
   };
 }
 
@@ -67,6 +64,7 @@ export interface SwiftMessage {
   };
   purpose: string;
   fees: string;
+  lastChecked?: string;
   status: SDNStatus;
   manuallyUpdated?: boolean;
 }
@@ -102,4 +100,48 @@ export interface BlacklistMatch {
   matchType: 'full' | 'short' | 'abbreviation' | 'inn';
   language: 'en' | 'ru' | 'numeric';
   entry: BlacklistEntry;
+}
+
+export interface CommonEntity {
+  id: string;
+  name: string;
+  inn?: string;
+  status: 'clean' | 'needs_review' | 'flagged';
+  lastChecked?: string;
+  notes?: string;
+  source: 'orginfo' | 'egrul';
+  CEO?: string;
+  Founders?: Array<{
+    owner: string;
+    isCompany: boolean;
+    companyDetails?: {
+      name: string;
+      CEO?: string;
+      Founders?: Array<any>;
+    };
+  }>;
+}
+
+export interface PreviewData {
+  name: string;
+  inn: string;
+  source: 'egrul' | 'orginfo';
+  CEO: string;
+  Founders: Array<{
+    owner: string;
+    isCompany: boolean;
+    companyDetails?: {
+      name: string;
+      CEO?: string;
+      Founders?: Array<any>;
+    };
+  }>;
+  status: 'clean' | 'needs_review' | 'flagged';
+  lastChecked: string;
+  notes: string;
+  originalData: {
+    name: string;
+    inn: string;
+    source: 'egrul' | 'orginfo';
+  };
 }

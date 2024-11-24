@@ -1,11 +1,11 @@
-const { contextBridge } = require('electron');
-const axios = require('axios');
+const { contextBridge } = require("electron");
+const axios = require("axios");
 
 // Define the API base URL for the backend
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = "http://localhost:3001/api";
 
 // Expose APIs to the renderer process
-contextBridge.exposeInMainWorld('api', {
+contextBridge.exposeInMainWorld("api", {
   // Search OrgInfo by company name
   searchOrgInfo: async (companyName) => {
     try {
@@ -14,8 +14,8 @@ contextBridge.exposeInMainWorld('api', {
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching OrgInfo:', error);
-      return { error: 'Failed to fetch OrgInfo data.' };
+      console.error("Error fetching OrgInfo:", error);
+      return { error: "Failed to fetch OrgInfo data." };
     }
   },
 
@@ -27,8 +27,8 @@ contextBridge.exposeInMainWorld('api', {
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching EGRUL data:', error);
-      return { error: 'Failed to fetch EGRUL data.' };
+      console.error("Error fetching EGRUL data:", error);
+      return { error: "Failed to fetch EGRUL data." };
     }
   },
 
@@ -38,8 +38,8 @@ contextBridge.exposeInMainWorld('api', {
       const response = await axios.get(`${API_BASE_URL}/sdn-list`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching SDN List:', error);
-      return { error: 'Failed to fetch SDN List.' };
+      console.error("Error fetching SDN List:", error);
+      return { error: "Failed to fetch SDN List." };
     }
   },
 
@@ -49,8 +49,8 @@ contextBridge.exposeInMainWorld('api', {
       const response = await axios.post(`${API_BASE_URL}/update-sdn-list`);
       return response.data;
     } catch (error) {
-      console.error('Error updating SDN List:', error);
-      return { error: 'Failed to update SDN List.' };
+      console.error("Error updating SDN List:", error);
+      return { error: "Failed to update SDN List." };
     }
   },
 
@@ -60,30 +60,34 @@ contextBridge.exposeInMainWorld('api', {
       const response = await axios.get(`${API_BASE_URL}/parsed-swift-files`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching parsed SWIFT files:', error);
-      return { error: 'Failed to fetch parsed SWIFT files.' };
+      console.error("Error fetching parsed SWIFT files:", error);
+      return { error: "Failed to fetch parsed SWIFT files." };
     }
   },
 
   // Process a SWIFT message from the frontend
   processSwiftMessage: async (message) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/process-swift`, { message });
+      const response = await axios.post(`${API_BASE_URL}/process-swift`, {
+        message,
+      });
       return response.data;
     } catch (error) {
-      console.error('Error processing SWIFT message:', error);
-      return { error: 'Failed to process SWIFT message.' };
+      console.error("Error processing SWIFT message:", error);
+      return { error: "Failed to process SWIFT message." };
     }
   },
 
   // Delete a SWIFT message by ID
   deleteSwiftMessage: async (id) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/delete-message/${id}`);
+      const response = await axios.delete(
+        `${API_BASE_URL}/delete-message/${id}`,
+      );
       return response.data;
     } catch (error) {
-      console.error('Error deleting SWIFT message:', error);
-      return { error: 'Failed to delete SWIFT message.' };
+      console.error("Error deleting SWIFT message:", error);
+      return { error: "Failed to delete SWIFT message." };
     }
-  }
+  },
 });

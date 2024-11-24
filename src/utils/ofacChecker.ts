@@ -1,122 +1,110 @@
-interface SdnEntry {
+import { transliterate } from 'transliteration';
+
+export interface SdnEntry {
   uid: string;
   name: string;
   name_variations?: string[];
   type: string;
   date_of_birth?: string;
-  id_number?: string; // Optional ID number for TIN comparison
+  id_number?: string;
   addresses?: { city: string; country: string }[];
   programs?: string[];
   remarks?: string;
+  aka_names?: string[];
 }
 
-export class OfacChecker {
-  private static ofacList: SdnEntry[] = [];
-  private static initialized = false;
-  private static FULL_NAME_THRESHOLD = 0.85; // Full name match threshold
-  private static PARTIAL_NAME_THRESHOLD = 0.75; // Partial name match threshold
+export interface NameCheckResult {
+  name: string;
+  isMatch: boolean;
+  matchScore: number;
+  matchedName?: string;
+  details?: {
+    type?: string;
+    programs?: string[];
+    remarks?: string;
+  };
+}
 
-  // Initialize OFAC data from the provided JSON file
-  static async initialize() {
-    if (this.initialized) return; // Prevent re-initialization
-  
+class OfacCheckerClass {
+  private initialized = false;
+  private sdnList: SdnEntry[] = [];
+
+  async initialize(): Promise<void> {
     try {
-      const response = await fetch('/data/sdn_cache.json');
-      if (!response.ok) {
-        console.error('Failed to fetch sdn_cache.json:', response.status, response.statusText);
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      this.ofacList = await response.json();
+      const response = await fetch('/sdn_cache.json');
+      this.sdnList = await response.json();
       this.initialized = true;
-      console.log('OFAC list initialized successfully.');
     } catch (error) {
-      console.error('Failed to load OFAC list:', error);
+      console.error('Failed to initialize OFAC checker:', error);
+      throw error;
     }
   }
-  
 
-  /**
-   * Check a name or entity against the OFAC list.
-   * @param searchText The text to search (name or entity).
-   * @returns Match details with type and score.
-   */
-  static async checkName(searchText: string): Promise<{
-    isMatch: boolean;
-    matchedEntry?: SdnEntry;
-    matchType?: 'name' | 'alias';
-    matchScore?: number;
-  }> {
-    await this.initialize(); // Ensure OFAC data is loaded
+  private calculateSimilarity(str1: string, str2: string): number {
+    const s1 = str1.toLowerCase();
+    const s2 = str2.toLowerCase();
+    
+    if (s1 === s2) return 1;
+    if (s1.length === 0 || s2.length === 0) return 0;
+    
+    const pairs1 = this.getWordPairs(s1);
+    const pairs2 = this.getWordPairs(s2);
+    const union = pairs1.size + pairs2.size;
+    const intersection = new Set([...pairs1].filter(x => pairs2.has(x))).size;
+    
+    return (2.0 * intersection) / union;
+  }
 
-    searchText = searchText.toLowerCase().trim();
-    let highestScore = 0;
-    let matchedEntry: SdnEntry | undefined;
-    let matchType: 'name' | 'alias' | undefined;
+  private getWordPairs(str: string): Set<string> {
+    const pairs = new Set<string>();
+    const words = str.split(/\s+/);
+    for (let i = 0; i < words.length - 1; i++) {
+      pairs.add(`${words[i]} ${words[i + 1]}`);
+    }
+    return pairs;
+  }
 
-    for (const entry of this.ofacList) {
-      // Check the main name
-      const fullNameScore = this.calculateSimilarity(searchText, entry.name.toLowerCase());
-      if (fullNameScore > highestScore) {
-        highestScore = fullNameScore;
-        matchedEntry = entry;
-        matchType = 'name';
+  async checkName(name: string): Promise<NameCheckResult> {
+    if (!this.initialized) {
+      throw new Error('OFAC Checker not initialized');
+    }
+
+    const transliteratedName = transliterate(name).toLowerCase();
+    let bestMatch: { score: number; entry: SdnEntry | null } = { score: 0, entry: null };
+
+    for (const entry of this.sdnList) {
+      // Check primary name
+      const primaryScore = this.calculateSimilarity(transliteratedName, transliterate(entry.name));
+      if (primaryScore > bestMatch.score) {
+        bestMatch = { score: primaryScore, entry };
       }
 
-      // Check name variations (aliases)
-      if (entry.name_variations) {
-        for (const alias of entry.name_variations) {
-          const aliasScore = this.calculateSimilarity(searchText, alias.toLowerCase());
-          if (aliasScore > highestScore) {
-            highestScore = aliasScore;
-            matchedEntry = entry;
-            matchType = 'alias';
+      // Check AKA names
+      if (entry.aka_names) {
+        for (const akaName of entry.aka_names) {
+          const akaScore = this.calculateSimilarity(transliteratedName, transliterate(akaName));
+          if (akaScore > bestMatch.score) {
+            bestMatch = { score: akaScore, entry };
           }
         }
       }
     }
 
-    const isMatch = highestScore >= this.FULL_NAME_THRESHOLD || highestScore >= this.PARTIAL_NAME_THRESHOLD;
-
+    // Determine match status based on score thresholds
+    const isMatch = bestMatch.score >= 0.85;
+    
     return {
+      name,
       isMatch,
-      matchedEntry: isMatch ? matchedEntry : undefined,
-      matchType: isMatch ? matchType : undefined,
-      matchScore: isMatch ? highestScore : undefined,
+      matchScore: bestMatch.score,
+      matchedName: bestMatch.entry?.name,
+      details: bestMatch.entry ? {
+        type: bestMatch.entry.type,
+        programs: bestMatch.entry.programs,
+        remarks: bestMatch.entry.remarks
+      } : undefined
     };
-  }
-
-  /**
-   * Calculate similarity score between two strings.
-   * @param str1 First string.
-   * @param str2 Second string.
-   * @returns A similarity score between 0.0 and 1.0.
-   */
-  private static calculateSimilarity(str1: string, str2: string): number {
-    if (str1 === str2) return 1.0;
-    if (!str1 || !str2) return 0.0;
-
-    const pairs1 = this.wordLetterPairs(str1);
-    const pairs2 = this.wordLetterPairs(str2);
-    const intersection = pairs1.filter(pair => pairs2.includes(pair)).length;
-    const union = pairs1.length + pairs2.length;
-
-    return (2.0 * intersection) / union;
-  }
-
-  /**
-   * Create letter pairs for each word in a string.
-   * @param str Input string.
-   * @returns An array of letter pairs.
-   */
-  private static wordLetterPairs(str: string): string[] {
-    const pairs: string[] = [];
-    const words = str.split(' ');
-    for (const word of words) {
-      for (let i = 0; i < word.length - 1; i++) {
-        pairs.push(word.substring(i, i + 2));
-      }
-    }
-    return pairs;
   }
 }
 
+export const OfacChecker = new OfacCheckerClass();

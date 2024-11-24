@@ -1,5 +1,5 @@
 // Define a reusable type for SDN status options
-type SdnStatusType = 'clear' | 'flagged' | 'pending';
+type SdnStatusType = "clear" | "flagged" | "pending";
 
 // Define a type for details about founders, used in company details
 interface FounderDetails {
@@ -19,7 +19,7 @@ export interface NameCheckResult {
   isMatch: boolean;
   matchScore: number;
   matchedName?: string;
-  matchType: 'name' | 'id' | 'address' | 'other';
+  matchType: "name" | "id" | "address" | "other";
   details?: {
     type?: string;
     programs?: string[];
@@ -65,7 +65,7 @@ export interface SwiftMessage {
   };
   purpose: string;
   fees: string;
-  status: 'processing' | 'clear' | 'flagged';
+  status: "processing" | "clear" | "flagged";
 }
 
 // Interface for blacklist entries
@@ -88,8 +88,8 @@ export interface BlacklistEntry {
 export interface BlacklistMatch {
   isMatch: boolean;
   matchedName: string;
-  matchType: 'full' | 'short' | 'abbreviation' | 'inn';
-  language: 'en' | 'ru' | 'numeric';
+  matchType: "full" | "short" | "abbreviation" | "inn";
+  language: "en" | "ru" | "numeric";
   entry: BlacklistEntry;
 }
 

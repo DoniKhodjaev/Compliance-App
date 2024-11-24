@@ -1,23 +1,27 @@
-import { useState } from 'react';
-import type { SwiftMessage } from '../types';
-import { Eye, Trash2 } from 'lucide-react';
-import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { useState } from "react";
+import type { SwiftMessage } from "../types";
+import { Eye, Trash2 } from "lucide-react";
+import { DeleteConfirmationModal } from "./DeleteConfirmationModal";
 
 interface MessageListProps {
   messages: SwiftMessage[];
   onViewMessage: (id: string) => void;
   onDeleteMessage: (id: string) => void;
-  onStatusChange: (id: string, status: SwiftMessage['status']) => void;
+  onStatusChange: (id: string, status: SwiftMessage["status"]) => void;
 }
 
 export function MessageList({
   messages = [],
   onViewMessage,
   onDeleteMessage,
+  onStatusChange,
 }: MessageListProps) {
-  const [messageToDelete, setMessageToDelete] = useState<SwiftMessage | null>(null);
+  const [messageToDelete, setMessageToDelete] = useState<SwiftMessage | null>(
+    null,
+  );
 
-  const handleDeleteClick = (message: SwiftMessage) => {
+  const handleDeleteClick = (e: React.MouseEvent, message: SwiftMessage) => {
+    e.stopPropagation();
     setMessageToDelete(message);
   };
 
@@ -25,6 +29,39 @@ export function MessageList({
     if (messageToDelete) {
       onDeleteMessage(messageToDelete.id);
       setMessageToDelete(null);
+    }
+  };
+
+  const handleRowClick = (message: SwiftMessage) => {
+    onViewMessage(message.id);
+  };
+
+  const handleActionClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const renderStatus = (status: SwiftMessage['status']) => {
+    switch (status) {
+      case 'flagged':
+        return (
+          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+            🚫 Flagged
+          </span>
+        );
+      case 'processing':
+        return (
+          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+            ⚠️ Needs Review
+          </span>
+        );
+      case 'clear':
+        return (
+          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+            ✅ Clear
+          </span>
+        );
+      default:
+        return null;
     }
   };
 
@@ -59,9 +96,13 @@ export function MessageList({
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {Array.isArray(messages) && messages.length > 0 ? (
+              {messages.length > 0 ? (
                 messages.map((message) => (
-                  <tr key={message.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                  <tr
+                    key={message.id}
+                    onClick={() => handleRowClick(message)}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {message.date}
                     </td>
@@ -75,36 +116,32 @@ export function MessageList({
                       {message.receiver.name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                      {message.currency}{' '}
-                      {new Intl.NumberFormat('en-US', {
+                      {message.currency}{" "}
+                      {new Intl.NumberFormat("en-US", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       }).format(parseFloat(message.amount))}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          message.status === 'clear'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : message.status === 'flagged'
-                            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                        }`}
-                      >
-                        {message.status}
-                      </span>
+                      {renderStatus(message.status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      <div className="flex items-center space-x-3">
+                      <div 
+                        className="flex items-center space-x-3"
+                        onClick={handleActionClick}
+                      >
                         <button
-                          onClick={() => onViewMessage(message.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewMessage(message.id);
+                          }}
                           className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                           title="View Details"
                         >
                           <Eye className="w-5 h-5" />
                         </button>
                         <button
-                          onClick={() => handleDeleteClick(message)}
+                          onClick={(e) => handleDeleteClick(e, message)}
                           className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors"
                           title="Delete Message"
                         >
@@ -116,7 +153,10 @@ export function MessageList({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500 dark:text-gray-300">
+                  <td
+                    colSpan={7}
+                    className="px-6 py-4 text-center text-gray-500 dark:text-gray-300"
+                  >
                     No messages found
                   </td>
                 </tr>

@@ -2,6 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  font-size: 16px;
+}
+
+/* Container sizes */
+.container {
+  max-width: 1536px;
+}
+
+/* Maintain original Tailwind sizes */
+.p-6 {
+  padding: 1.5rem;
+}
+
+.px-6 {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.py-4 {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+/* Font sizes */
+.text-xl {
+  font-size: 1.25rem;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+}
+
+.text-base {
+  font-size: 1rem;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+}
+
+.text-xs {
+  font-size: 0.75rem;
+}
+
+/* Button and input sizes */
+button, input, select {
+  font-size: inherit;
+}
+
+/* Icon sizes */
+.w-6 {
+  width: 1.5rem;
+}
+
+.h-6 {
+  height: 1.5rem;
+}
+
+.w-4 {
+  width: 1rem;
+}
+
+.h-4 {
+  height: 1rem;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
 @layer base {
   body {
     @apply antialiased text-gray-900 dark:text-gray-100;
@@ -12,11 +86,11 @@
   .btn {
     @apply px-4 py-2 rounded-lg font-medium transition-colors;
   }
-  
+
   .btn-primary {
     @apply bg-[#008766] text-white hover:bg-[#007055] dark:bg-[#007055] dark:hover:bg-[#006045];
   }
-  
+
   .btn-secondary {
     @apply bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600;
   }

@@ -1,0 +1,15 @@
+{
+  "blacklistManagement": "Blacklist Management",
+  "downloadTemplate": "Download Template",
+  "importCsv": "Import CSV",
+  "addEntry": "Add Entry",
+  "dashboard": "Dashboard",
+  "entitySearch": "Entity Search",
+  "commonEntities": "Common Entities",
+  "blacklist": "Blacklist",
+  "sdnList": "SDN List",
+  "reports": "Reports",
+  "language": "Language",
+  "language_en": "English",
+  "language_ru": "Russian"
+} 

@@ -1,5 +1,6 @@
-import { AlertTriangle, X } from 'lucide-react';
-import type { SwiftMessage } from '../types';
+import { useRef, useEffect } from 'react';
+import { AlertTriangle, X } from "lucide-react";
+import type { SwiftMessage } from "../types";
 
 interface DeleteConfirmationModalProps {
   message: SwiftMessage;
@@ -12,21 +13,43 @@ export function DeleteConfirmationModal({
   message,
   isOpen,
   onClose,
-  onConfirm
+  onConfirm,
 }: DeleteConfirmationModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const formatAmount = (amount: string, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'decimal',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(parseFloat(amount)) + ' ' + currency;
+    return (
+      new Intl.NumberFormat("en-US", {
+        style: "decimal",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(parseFloat(amount)) +
+      " " +
+      currency
+    );
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl transform transition-all">
+      <div ref={modalRef} className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl transform transition-all">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
@@ -52,7 +75,9 @@ export function DeleteConfirmationModal({
 
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-2">
               <div className="grid grid-cols-3 gap-2 text-sm">
-                <div className="text-gray-500 dark:text-gray-400">Reference:</div>
+                <div className="text-gray-500 dark:text-gray-400">
+                  Reference:
+                </div>
                 <div className="col-span-2 font-medium text-gray-900 dark:text-white">
                   {message.transactionRef}
                 </div>
@@ -72,7 +97,9 @@ export function DeleteConfirmationModal({
                   {message.sender.name}
                 </div>
 
-                <div className="text-gray-500 dark:text-gray-400">Receiver:</div>
+                <div className="text-gray-500 dark:text-gray-400">
+                  Receiver:
+                </div>
                 <div className="col-span-2 font-medium text-gray-900 dark:text-white">
                   {message.receiver.name}
                 </div>
@@ -81,7 +108,8 @@ export function DeleteConfirmationModal({
 
             <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
               <p className="text-sm text-red-600 dark:text-red-400">
-                ⚠️ This action cannot be undone. The message will be permanently deleted.
+                ⚠️ This action cannot be undone. The message will be permanently
+                deleted.
               </p>
             </div>
           </div>

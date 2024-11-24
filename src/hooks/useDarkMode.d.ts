@@ -1,1 +1,4 @@
-export declare function useDarkMode(): readonly [any, import("react").Dispatch<any>];
+export declare function useDarkMode(): readonly [
+  any,
+  import("react").Dispatch<any>,
+];

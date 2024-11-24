@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, Filter, X } from 'lucide-react';
+import { useState } from "react";
+import { Search, Filter, X } from "lucide-react";
 
 interface DashboardFiltersProps {
   onFilterChange: (filters: any) => void;
@@ -15,22 +15,22 @@ interface FilterState {
   receiverName: string;
   bankName: string;
   reference: string;
-  status: '' | 'processing' | 'clear' | 'flagged';
+  status: "" | "processing" | "clear" | "flagged";
 }
 
 export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
-    search: '',
-    dateFrom: '',
-    dateTo: '',
-    amountFrom: '',
-    amountTo: '',
-    senderName: '',
-    receiverName: '',
-    bankName: '',
-    reference: '',
-    status: '',
+    search: "",
+    dateFrom: "",
+    dateTo: "",
+    amountFrom: "",
+    amountTo: "",
+    senderName: "",
+    receiverName: "",
+    bankName: "",
+    reference: "",
+    status: "",
   });
 
   const handleFilterChange = (key: keyof FilterState, value: string) => {
@@ -41,16 +41,16 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
 
   const clearFilters = () => {
     const emptyFilters: FilterState = {
-      search: '',
-      dateFrom: '',
-      dateTo: '',
-      amountFrom: '',
-      amountTo: '',
-      senderName: '',
-      receiverName: '',
-      bankName: '',
-      reference: '',
-      status: '',
+      search: "",
+      dateFrom: "",
+      dateTo: "",
+      amountFrom: "",
+      amountTo: "",
+      senderName: "",
+      receiverName: "",
+      bankName: "",
+      reference: "",
+      status: "",
     };
     setFilters(emptyFilters);
     onFilterChange(emptyFilters);
@@ -65,8 +65,11 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
             type="text"
             placeholder="Search by name, bank, reference..."
             value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            className="w-full pl-10 pr-4 h-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008766] focus:border-transparent dark:bg-gray-700 dark:text-white"
+            onChange={(e) => handleFilterChange("search", e.target.value)}
+            className="w-full pl-10 pr-4 h-10 border border-gray-300 dark:border-gray-600 rounded-lg 
+              focus:outline-none focus:ring-2 focus:ring-[#008766] focus:border-transparent 
+              bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+              placeholder-gray-500 dark:placeholder-gray-400"
           />
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
         </div>
@@ -91,14 +94,18 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
                 <input
                   type="date"
                   value={filters.dateFrom}
-                  onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-[#008766] focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md 
+                    focus:outline-none focus:ring-[#008766] focus:border-transparent 
+                    bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
                 <input
                   type="date"
                   value={filters.dateTo}
-                  onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-[#008766] focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  onChange={(e) => handleFilterChange("dateTo", e.target.value)}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md 
+                    focus:outline-none focus:ring-[#008766] focus:border-transparent 
+                    bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
             </div>
@@ -113,15 +120,23 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
                   type="number"
                   placeholder="From"
                   value={filters.amountFrom}
-                  onChange={(e) => handleFilterChange('amountFrom', e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-[#008766] focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  onChange={(e) =>
+                    handleFilterChange("amountFrom", e.target.value)
+                  }
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md 
+                    focus:outline-none focus:ring-[#008766] focus:border-transparent 
+                    bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
                 <input
                   type="number"
                   placeholder="To"
                   value={filters.amountTo}
-                  onChange={(e) => handleFilterChange('amountTo', e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-[#008766] focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  onChange={(e) =>
+                    handleFilterChange("amountTo", e.target.value)
+                  }
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md 
+                    focus:outline-none focus:ring-[#008766] focus:border-transparent 
+                    bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
             </div>
@@ -133,8 +148,10 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
               </label>
               <select
                 value={filters.status}
-                onChange={(e) => handleFilterChange('status', e.target.value)}
-                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-[#008766] focus:border-transparent dark:bg-gray-700 dark:text-white"
+                onChange={(e) => handleFilterChange("status", e.target.value)}
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md 
+                  focus:outline-none focus:ring-[#008766] focus:border-transparent 
+                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="">All</option>
                 <option value="processing">Processing</option>
@@ -152,8 +169,12 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
                 type="text"
                 placeholder="Enter sender name"
                 value={filters.senderName}
-                onChange={(e) => handleFilterChange('senderName', e.target.value)}
-                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-[#008766] focus:border-transparent dark:bg-gray-700 dark:text-white"
+                onChange={(e) =>
+                  handleFilterChange("senderName", e.target.value)
+                }
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md 
+                  focus:outline-none focus:ring-[#008766] focus:border-transparent 
+                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
 
@@ -166,8 +187,12 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
                 type="text"
                 placeholder="Enter receiver name"
                 value={filters.receiverName}
-                onChange={(e) => handleFilterChange('receiverName', e.target.value)}
-                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-[#008766] focus:border-transparent dark:bg-gray-700 dark:text-white"
+                onChange={(e) =>
+                  handleFilterChange("receiverName", e.target.value)
+                }
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md 
+                  focus:outline-none focus:ring-[#008766] focus:border-transparent 
+                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
 
@@ -180,8 +205,10 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
                 type="text"
                 placeholder="Enter bank name"
                 value={filters.bankName}
-                onChange={(e) => handleFilterChange('bankName', e.target.value)}
-                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-[#008766] focus:border-transparent dark:bg-gray-700 dark:text-white"
+                onChange={(e) => handleFilterChange("bankName", e.target.value)}
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md 
+                  focus:outline-none focus:ring-[#008766] focus:border-transparent 
+                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
 
@@ -194,8 +221,12 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
                 type="text"
                 placeholder="Enter reference number"
                 value={filters.reference}
-                onChange={(e) => handleFilterChange('reference', e.target.value)}
-                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-[#008766] focus:border-transparent dark:bg-gray-700 dark:text-white"
+                onChange={(e) =>
+                  handleFilterChange("reference", e.target.value)
+                }
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md 
+                  focus:outline-none focus:ring-[#008766] focus:border-transparent 
+                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
           </div>

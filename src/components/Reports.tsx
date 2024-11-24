@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,10 +11,10 @@ import {
   Tooltip,
   Legend,
   TimeScale,
-} from 'chart.js';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
-import 'chartjs-adapter-date-fns';
-import type { SwiftMessage } from '../types';
+} from "chart.js";
+import { Line, Bar, Doughnut } from "react-chartjs-2";
+import "chartjs-adapter-date-fns";
+import type { SwiftMessage } from "../types";
 
 // Register ChartJS components
 ChartJS.register(
@@ -27,7 +27,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  TimeScale
+  TimeScale,
 );
 
 interface ReportsProps {
@@ -37,14 +37,17 @@ interface ReportsProps {
 export function Reports({ messages }: ReportsProps) {
   // Group transactions by currency
   const currencyGroups = useMemo(() => {
-    return messages.reduce((acc, msg) => {
-      const currency = msg.currency || 'Unknown';
-      if (!acc[currency]) {
-        acc[currency] = [];
-      }
-      acc[currency].push(msg);
-      return acc;
-    }, {} as { [key: string]: SwiftMessage[] });
+    return messages.reduce(
+      (acc, msg) => {
+        const currency = msg.currency || "Unknown";
+        if (!acc[currency]) {
+          acc[currency] = [];
+        }
+        acc[currency].push(msg);
+        return acc;
+      },
+      {} as { [key: string]: SwiftMessage[] },
+    );
   }, [messages]);
 
   // Calculate totals for each currency
@@ -53,25 +56,32 @@ export function Reports({ messages }: ReportsProps) {
       currency,
       total: msgs.reduce((sum, msg) => sum + parseFloat(msg.amount), 0),
       count: msgs.length,
-      average: msgs.reduce((sum, msg) => sum + parseFloat(msg.amount), 0) / msgs.length,
+      average:
+        msgs.reduce((sum, msg) => sum + parseFloat(msg.amount), 0) /
+        msgs.length,
     }));
   }, [currencyGroups]);
 
   // Daily transactions data
   const dailyTransactionsData = useMemo(() => {
-    const dailyData = messages.reduce((acc, msg) => {
-      const date = msg.date;
-      if (!acc[date]) {
-        acc[date] = {
-          count: 0,
-          amount: 0,
-          currency: msg.currency
-        };
-      }
-      acc[date].count++;
-      acc[date].amount += parseFloat(msg.amount);
-      return acc;
-    }, {} as { [key: string]: { count: number; amount: number; currency: string } });
+    const dailyData = messages.reduce(
+      (acc, msg) => {
+        const date = msg.date;
+        if (!acc[date]) {
+          acc[date] = {
+            count: 0,
+            amount: 0,
+            currency: msg.currency,
+          };
+        }
+        acc[date].count++;
+        acc[date].amount += parseFloat(msg.amount);
+        return acc;
+      },
+      {} as {
+        [key: string]: { count: number; amount: number; currency: string };
+      },
+    );
 
     const sortedDates = Object.keys(dailyData).sort();
 
@@ -79,18 +89,18 @@ export function Reports({ messages }: ReportsProps) {
       labels: sortedDates,
       datasets: [
         {
-          label: 'Number of Transactions',
-          data: sortedDates.map(date => dailyData[date].count),
-          borderColor: 'rgb(0, 135, 102)',
-          backgroundColor: 'rgba(0, 135, 102, 0.5)',
-          yAxisID: 'y',
+          label: "Number of Transactions",
+          data: sortedDates.map((date) => dailyData[date].count),
+          borderColor: "rgb(0, 135, 102)",
+          backgroundColor: "rgba(0, 135, 102, 0.5)",
+          yAxisID: "y",
         },
         {
-          label: 'Total Volume',
-          data: sortedDates.map(date => dailyData[date].amount),
-          borderColor: 'rgb(53, 162, 235)',
-          backgroundColor: 'rgba(53, 162, 235, 0.5)',
-          yAxisID: 'y1',
+          label: "Total Volume",
+          data: sortedDates.map((date) => dailyData[date].amount),
+          borderColor: "rgb(53, 162, 235)",
+          backgroundColor: "rgba(53, 162, 235, 0.5)",
+          yAxisID: "y1",
         },
       ],
     };
@@ -98,19 +108,24 @@ export function Reports({ messages }: ReportsProps) {
 
   // Bank statistics data
   const bankStats = useMemo(() => {
-    const bankData = messages.reduce((acc, msg) => {
-      const bankName = msg.receiver.bankName || 'Unknown Bank';
-      if (!acc[bankName]) {
-        acc[bankName] = {
-          count: 0,
-          amount: 0,
-          currency: msg.currency
-        };
-      }
-      acc[bankName].count++;
-      acc[bankName].amount += parseFloat(msg.amount);
-      return acc;
-    }, {} as { [key: string]: { count: number; amount: number; currency: string } });
+    const bankData = messages.reduce(
+      (acc, msg) => {
+        const bankName = msg.receiver.bankName || "Unknown Bank";
+        if (!acc[bankName]) {
+          acc[bankName] = {
+            count: 0,
+            amount: 0,
+            currency: msg.currency,
+          };
+        }
+        acc[bankName].count++;
+        acc[bankName].amount += parseFloat(msg.amount);
+        return acc;
+      },
+      {} as {
+        [key: string]: { count: number; amount: number; currency: string };
+      },
+    );
 
     const banks = Object.keys(bankData);
 
@@ -118,10 +133,10 @@ export function Reports({ messages }: ReportsProps) {
       labels: banks,
       datasets: [
         {
-          label: 'Number of Transactions',
-          data: banks.map(bank => bankData[bank].count),
-          backgroundColor: 'rgba(0, 135, 102, 0.6)',
-          borderColor: 'rgb(0, 135, 102)',
+          label: "Number of Transactions",
+          data: banks.map((bank) => bankData[bank].count),
+          backgroundColor: "rgba(0, 135, 102, 0.6)",
+          borderColor: "rgb(0, 135, 102)",
           borderWidth: 1,
         },
       ],
@@ -130,29 +145,32 @@ export function Reports({ messages }: ReportsProps) {
 
   // Status distribution data
   const statusData = useMemo(() => {
-    const statusCounts = messages.reduce((acc, msg) => {
-      acc[msg.status] = (acc[msg.status] || 0) + 1;
-      return acc;
-    }, {} as { [key: string]: number });
+    const statusCounts = messages.reduce(
+      (acc, msg) => {
+        acc[msg.status] = (acc[msg.status] || 0) + 1;
+        return acc;
+      },
+      {} as { [key: string]: number },
+    );
 
     return {
-      labels: ['Clear', 'Flagged', 'Processing'],
+      labels: ["Clear", "Flagged", "Processing"],
       datasets: [
         {
           data: [
-            statusCounts['clear'] || 0,
-            statusCounts['flagged'] || 0,
-            statusCounts['processing'] || 0,
+            statusCounts["clear"] || 0,
+            statusCounts["flagged"] || 0,
+            statusCounts["processing"] || 0,
           ],
           backgroundColor: [
-            'rgba(0, 200, 83, 0.6)',
-            'rgba(255, 87, 34, 0.6)',
-            'rgba(255, 193, 7, 0.6)',
+            "rgba(0, 200, 83, 0.6)",
+            "rgba(255, 87, 34, 0.6)",
+            "rgba(255, 193, 7, 0.6)",
           ],
           borderColor: [
-            'rgb(0, 200, 83)',
-            'rgb(255, 87, 34)',
-            'rgb(255, 193, 7)',
+            "rgb(0, 200, 83)",
+            "rgb(255, 87, 34)",
+            "rgb(255, 193, 7)",
           ],
           borderWidth: 1,
         },
@@ -166,9 +184,9 @@ export function Reports({ messages }: ReportsProps) {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'bottom' as const,
+        position: "bottom" as const,
         labels: {
-          color: 'rgb(156, 163, 175)',
+          color: "rgb(156, 163, 175)",
         },
       },
     },
@@ -176,18 +194,18 @@ export function Reports({ messages }: ReportsProps) {
       y: {
         beginAtZero: true,
         grid: {
-          color: 'rgba(156, 163, 175, 0.1)',
+          color: "rgba(156, 163, 175, 0.1)",
         },
         ticks: {
-          color: 'rgb(156, 163, 175)',
+          color: "rgb(156, 163, 175)",
         },
       },
       x: {
         grid: {
-          color: 'rgba(156, 163, 175, 0.1)',
+          color: "rgba(156, 163, 175, 0.1)",
         },
         ticks: {
-          color: 'rgb(156, 163, 175)',
+          color: "rgb(156, 163, 175)",
         },
       },
     },
@@ -195,11 +213,15 @@ export function Reports({ messages }: ReportsProps) {
 
   // Format currency amount
   const formatAmount = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'decimal',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount) + ' ' + currency;
+    return (
+      new Intl.NumberFormat("en-US", {
+        style: "decimal",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount) +
+      " " +
+      currency
+    );
   };
 
   return (
@@ -237,7 +259,14 @@ export function Reports({ messages }: ReportsProps) {
                 Flagged Rate ({currency})
               </h3>
               <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                {((currencyGroups[currency].filter(m => m.status === 'flagged').length / count) * 100).toFixed(1)}%
+                {(
+                  (currencyGroups[currency].filter(
+                    (m) => m.status === "flagged",
+                  ).length /
+                    count) *
+                  100
+                ).toFixed(1)}
+                %
               </p>
             </div>
           </React.Fragment>
@@ -248,7 +277,9 @@ export function Reports({ messages }: ReportsProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Daily Transactions Chart */}
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Daily Transactions</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+            Daily Transactions
+          </h3>
           <div className="h-80">
             <Line data={dailyTransactionsData} options={chartOptions} />
           </div>
@@ -256,7 +287,9 @@ export function Reports({ messages }: ReportsProps) {
 
         {/* Bank Statistics */}
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Bank Activity</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+            Bank Activity
+          </h3>
           <div className="h-80">
             <Bar data={bankStats} options={chartOptions} />
           </div>
@@ -264,30 +297,38 @@ export function Reports({ messages }: ReportsProps) {
 
         {/* Status Distribution */}
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Status Distribution</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+            Status Distribution
+          </h3>
           <div className="h-80">
-            <Doughnut data={statusData} options={{
-              ...chartOptions,
-              plugins: {
-                ...chartOptions.plugins,
-                legend: {
-                  ...chartOptions.plugins.legend,
-                  position: 'right' as const,
+            <Doughnut
+              data={statusData}
+              options={{
+                ...chartOptions,
+                plugins: {
+                  ...chartOptions.plugins,
+                  legend: {
+                    ...chartOptions.plugins.legend,
+                    position: "right" as const,
+                  },
                 },
-              },
-            }} />
+              }}
+            />
           </div>
         </div>
 
         {/* Amount Ranges by Currency */}
         {Object.entries(currencyGroups).map(([currency, msgs]) => (
-          <div key={currency} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+          <div
+            key={currency}
+            className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm"
+          >
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
               Transaction Amounts ({currency})
             </h3>
             <div className="h-80">
-              <Bar 
-                data={getAmountRangesData(msgs)} 
+              <Bar
+                data={getAmountRangesData(msgs)}
                 options={{
                   ...chartOptions,
                   scales: {
@@ -297,15 +338,15 @@ export function Reports({ messages }: ReportsProps) {
                       title: {
                         display: true,
                         text: `Amount (${currency})`,
-                        color: 'rgb(156, 163, 175)',
+                        color: "rgb(156, 163, 175)",
                       },
                     },
                     y: {
                       ...chartOptions.scales.y,
                       title: {
                         display: true,
-                        text: 'Number of Transactions',
-                        color: 'rgb(156, 163, 175)',
+                        text: "Number of Transactions",
+                        color: "rgb(156, 163, 175)",
                       },
                     },
                   },
@@ -330,22 +371,22 @@ function getAmountRangesData(messages: SwiftMessage[]) {
     { min: 100000000, max: Infinity },
   ];
 
-  const rangeCounts = ranges.map(range => ({
-    label: `${range.min.toLocaleString()} - ${range.max === Infinity ? '∞' : range.max.toLocaleString()}`,
-    count: messages.filter(m => {
+  const rangeCounts = ranges.map((range) => ({
+    label: `${range.min.toLocaleString()} - ${range.max === Infinity ? "∞" : range.max.toLocaleString()}`,
+    count: messages.filter((m) => {
       const amount = parseFloat(m.amount);
       return amount >= range.min && amount < range.max;
     }).length,
   }));
 
   return {
-    labels: rangeCounts.map(r => r.label),
+    labels: rangeCounts.map((r) => r.label),
     datasets: [
       {
-        label: 'Number of Transactions',
-        data: rangeCounts.map(r => r.count),
-        backgroundColor: 'rgba(0, 135, 102, 0.6)',
-        borderColor: 'rgb(0, 135, 102)',
+        label: "Number of Transactions",
+        data: rangeCounts.map((r) => r.count),
+        backgroundColor: "rgba(0, 135, 102, 0.6)",
+        borderColor: "rgb(0, 135, 102)",
         borderWidth: 1,
       },
     ],
