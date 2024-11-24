@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Trash2, Search, Edit2, Download, Upload, Plus } from 'lucide-react';
+import { Trash2, Edit2, Download, Upload, Plus } from 'lucide-react';
 import type { BlacklistEntry } from '../types';
 import { BlacklistModal } from './BlacklistModal';
 import { BlacklistDeleteModal } from './BlacklistDeleteModal';
-import { useTranslateAndTransliterate } from '../hooks/useTranslateAndTransliterate';
 import { transliterate } from 'transliteration';
 import { toast } from 'react-hot-toast';
+import { BlacklistPreviewModal } from './BlacklistPreviewModal';
+import Papa from 'papaparse';
 
 interface BlacklistManagerProps {
   entries: BlacklistEntry[];
@@ -19,16 +20,32 @@ export function BlacklistManager({ entries, onAddEntry, onUpdateEntry, onDeleteE
   const [searchTerm, setSearchTerm] = useState('');
   const [editingEntry, setEditingEntry] = useState<BlacklistEntry | null>(null);
   const [entryToDelete, setEntryToDelete] = useState<BlacklistEntry | null>(null);
-  const { t } = useTranslateAndTransliterate();
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importData, setImportData] = useState<any[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [previewData, setPreviewData] = useState<Omit<BlacklistEntry, 'id' | 'dateAdded'>[]>([]);
 
   const filteredEntries = entries.filter(entry => {
     const searchLower = searchTerm.toLowerCase();
+    const searchTranslit = transliterate(searchLower);
+
     return (
+      // Check INN
       entry.inn?.toLowerCase().includes(searchLower) ||
-      Object.values(entry.names).some(name => 
-        name.toLowerCase().includes(searchLower)
-      ) ||
-      entry.notes?.toLowerCase().includes(searchLower)
+      
+      // Check all name variations in both original and transliterated forms
+      Object.values(entry.names).some(name => {
+        const nameLower = name.toLowerCase();
+        const nameTranslit = transliterate(nameLower);
+        return nameLower.includes(searchLower) || 
+               nameTranslit.includes(searchLower) ||
+               nameLower.includes(searchTranslit) ||
+               nameTranslit.includes(searchTranslit);
+      }) ||
+      
+      // Check notes in both original and transliterated forms
+      (entry.notes?.toLowerCase().includes(searchLower) ||
+       transliterate(entry.notes || '').toLowerCase().includes(searchTranslit))
     );
   });
 
@@ -89,15 +106,27 @@ export function BlacklistManager({ entries, onAddEntry, onUpdateEntry, onDeleteE
     }
   };
 
-  const downloadSampleCSV = () => {
-    const headers = "INN,Full Name (EN),Full Name (RU),Short Name (EN),Short Name (RU),Abbreviation (EN),Abbreviation (RU),Notes\n";
-    const sampleData = "123456789,Example Company Ltd,Пример Компания ООО,Example Co,Пример Ко,ECL,ПКО,Sample notes\n";
-    const csvContent = headers + sampleData;
+  const handleExport = () => {
+    const headers = "INN,Full Name (EN),Full Name (RU),Short Name (EN),Short Name (RU),Abbreviation (EN),Abbreviation (RU),Notes,Date Added\n";
+    const rows = entries.map(entry => [
+      entry.inn || '',
+      `"${entry.names.fullNameEn}"`,  // Add quotes to handle commas in names
+      `"${entry.names.fullNameRu}"`,
+      `"${entry.names.shortNameEn || ''}"`,
+      `"${entry.names.shortNameRu || ''}"`,
+      `"${entry.names.abbreviationEn || ''}"`,
+      `"${entry.names.abbreviationRu || ''}"`,
+      `"${entry.notes || ''}"`,
+      new Date(entry.dateAdded).toISOString()
+    ].join(','));
     
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Add BOM for UTF-8 encoding
+    const csvContent = '\ufeff' + headers + rows.join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = "blacklist_template.csv";
+    link.download = `blacklist_export_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     URL.revokeObjectURL(link.href);
   };
@@ -105,6 +134,97 @@ export function BlacklistManager({ entries, onAddEntry, onUpdateEntry, onDeleteE
   const handleRowClick = (entry: BlacklistEntry) => {
     setEditingEntry(entry);
     setIsModalOpen(true);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      Papa.parse(text, {
+        header: true,
+        skipEmptyLines: true,
+        encoding: 'UTF-8',
+        complete: (results) => {
+          const data = results.data.map((row: any) => {
+            // Map CSV columns to expected format
+            return {
+              fullNameEn: row['Full Name (EN)'] || row['full_name_en'] || '',
+              fullNameRu: row['Full Name (RU)'] || row['full_name_ru'] || '',
+              shortNameEn: row['Short Name (EN)'] || row['short_name_en'] || '',
+              shortNameRu: row['Short Name (RU)'] || row['short_name_ru'] || '',
+              abbreviationEn: row['Abbreviation (EN)'] || row['abbreviation_en'] || '',
+              abbreviationRu: row['Abbreviation (RU)'] || row['abbreviation_ru'] || '',
+              inn: row['INN'] || row['inn'] || '',
+              notes: row['Notes'] || row['notes'] || ''
+            };
+          }).filter(row => row.fullNameEn || row.fullNameRu);
+          
+          setImportData(data);
+        },
+        error: (error: Error) => {
+          console.error('Error parsing CSV:', error);
+          toast.error('Failed to parse CSV file');
+        }
+      });
+    };
+
+    reader.onerror = () => {
+      console.error('Error reading file');
+      toast.error('Failed to read CSV file');
+    };
+
+    reader.readAsText(file, 'UTF-8');
+    event.target.value = '';
+  };
+
+  const handleImport = async (selectedRows: number[]) => {
+    setIsProcessing(true);
+    try {
+      const selectedData = selectedRows.map(index => importData[index]);
+      const processedData = selectedData.map(row => ({
+        names: {
+          fullNameEn: row.fullNameEn,
+          fullNameRu: row.fullNameRu,
+          shortNameEn: row.shortNameEn,
+          shortNameRu: row.shortNameRu,
+          abbreviationEn: row.abbreviationEn,
+          abbreviationRu: row.abbreviationRu,
+        },
+        inn: row.inn,
+        notes: row.notes
+      }));
+
+      console.log('Processed data:', processedData); // Debug log
+      setPreviewData(processedData);
+    } catch (error) {
+      console.error('Error processing data:', error);
+      toast.error('Failed to process import data');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmImport = () => {
+    previewData.forEach(data => {
+      onAddEntry(data);
+    });
+
+    toast.success(`Successfully imported ${previewData.length} entries`, {
+      duration: 3000,
+      position: 'top-right',
+      style: {
+        background: '#008766',
+        color: '#fff',
+        borderRadius: '8px',
+      },
+    });
+
+    setPreviewData([]);
+    setImportData([]);
+    setIsImportModalOpen(false);
   };
 
   return (
@@ -116,27 +236,19 @@ export function BlacklistManager({ entries, onAddEntry, onUpdateEntry, onDeleteE
         </h2>
         <div className="flex gap-3">
           <button
-            onClick={downloadSampleCSV}
+            onClick={handleExport}
             className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
           >
             <Download className="w-4 h-4 mr-2" />
             Export
           </button>
-          <label className="flex items-center px-4 py-2 bg-[#008766] text-white rounded-md hover:bg-[#007055] cursor-pointer">
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center px-4 py-2 bg-[#008766] text-white rounded-md hover:bg-[#007055]"
+          >
             <Upload className="w-4 h-4 mr-2" />
             Import
-            <input
-              type="file"
-              accept=".csv"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  // Add CSV import logic here
-                }
-              }}
-            />
-          </label>
+          </button>
           <button
             onClick={() => setIsModalOpen(true)}
             className="flex items-center px-4 py-2 bg-[#008766] text-white rounded-md hover:bg-[#007055]"
@@ -246,11 +358,29 @@ export function BlacklistManager({ entries, onAddEntry, onUpdateEntry, onDeleteE
         entry={editingEntry}
       />
 
-      <BlacklistDeleteModal
-        entry={entryToDelete}
-        isOpen={!!entryToDelete}
-        onClose={() => setEntryToDelete(null)}
-        onConfirm={handleConfirmDelete}
+      {entryToDelete && (
+        <BlacklistDeleteModal
+          entry={entryToDelete}
+          isOpen={!!entryToDelete}
+          onClose={() => setEntryToDelete(null)}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
+
+      <BlacklistPreviewModal
+        isOpen={isImportModalOpen}
+        onClose={() => {
+          setIsImportModalOpen(false);
+          setPreviewData([]);
+          setImportData([]);
+        }}
+        data={importData}
+        previewData={previewData}
+        isProcessing={isProcessing}
+        onDownloadSample={handleExport}
+        onImport={handleImport}
+        onConfirmImport={handleConfirmImport}
+        onFileSelect={handleFileUpload}
       />
     </div>
   );

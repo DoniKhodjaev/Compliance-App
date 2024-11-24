@@ -5,6 +5,7 @@ import { transliterate } from 'transliteration';
 import { CSVPreviewModal } from './CSVPreviewModal';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import { OfacChecker } from '../utils/ofacChecker';
 
 interface CommonEntitiesManagerProps {
   entities: CommonEntity[];
@@ -196,19 +197,86 @@ export function CommonEntitiesManager({
   const handlePreviewData = async (selectedRows: number[]) => {
     setIsProcessing(true);
     try {
-      const results = await Promise.all(selectedRows.map(fetchEntityDetails));
-      const validResults = results.filter((result): result is PreviewData => 
-        result !== null && 
-        typeof result === 'object' &&
-        'name' in result &&
-        'source' in result &&
-        'inn' in result &&
-        'CEO' in result &&
-        'Founders' in result &&
-        'lastChecked' in result &&
-        'notes' in result &&
-        'originalData' in result
+      const results = await Promise.all(
+        selectedRows.map(async (index) => {
+          const row = importData[index];
+          let entityData;
+  
+          if (row.source === 'egrul' && row.inn) {
+            const response = await axios.get(
+              `${import.meta.env.VITE_BACKEND_URL2}/api/search-egrul`,
+              {
+                params: { inn: row.inn },
+                headers: {
+                  Accept: 'application/json',
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
+            entityData = response.data;
+          } else if (row.source === 'orginfo' && row.name) {
+            const response = await axios.get(
+              `${import.meta.env.VITE_BACKEND_URL2}/api/search-orginfo`,
+              {
+                params: { company_name: row.name },
+                headers: {
+                  Accept: 'application/json',
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
+            entityData = response.data;
+          }
+  
+          if (entityData && !entityData.error) {
+            // Initialize OFAC checker
+            await OfacChecker.initialize();
+
+            // Check entity name
+            const nameResult = await OfacChecker.checkName(entityData.name || row.name);
+            
+            // Check CEO if exists
+            let ceoResult = null;
+            if (entityData.CEO) {
+              ceoResult = await OfacChecker.checkName(entityData.CEO);
+            }
+
+            // Determine status based on OFAC check results
+            let status: CommonEntity['status'] = 'clean';
+            
+            // If any check has a 100% match, mark as flagged
+            if (nameResult.matchScore === 1 || (ceoResult && ceoResult.matchScore === 1)) {
+              status = 'flagged';
+            }
+            // If any check has a high match (>= 85%), mark as needs review
+            else if (nameResult.matchScore >= 0.85 || (ceoResult && ceoResult.matchScore >= 0.85)) {
+              status = 'needs_review';
+            }
+
+            return {
+              name: entityData.name || row.name,
+              inn: entityData.inn || row.inn || '',
+              source: row.source as 'egrul' | 'orginfo',
+              CEO: entityData.CEO || '',
+              Founders: entityData.Founders || [],
+              status,  // Use the determined status
+              lastChecked: new Date().toISOString(),
+              notes: '',
+              originalData: {
+                name: row.name,
+                inn: row.inn || '',
+                source: row.source,
+              },
+            };
+          }
+          return null;
+        })
       );
+  
+      const validResults = results.filter((result): result is PreviewData => 
+        result !== null
+      );
+  
       setPreviewData(validResults);
     } catch (error) {
       console.error('Error processing preview:', error);
@@ -217,92 +285,54 @@ export function CommonEntitiesManager({
       setIsProcessing(false);
     }
   };
-
-  const fetchEntityDetails = async (row: any): Promise<PreviewData | null> => {
-    try {
-      let entityData;
-      if (row.source === 'egrul' && row.inn) {
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL2}/api/search-egrul`,
-          {
-            params: { inn: row.inn },
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        entityData = response.data;
-      } else if (row.source === 'orginfo' && row.name) {
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL2}/api/search-orginfo`,
-          {
-            params: { company_name: row.name },
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        entityData = response.data;
-      }
-
-      if (entityData && !entityData.error) {
-        return {
-          name: entityData.name,
-          inn: entityData.inn || row.inn || '',
-          source: row.source as 'egrul' | 'orginfo',
-          CEO: entityData.CEO || '',
-          Founders: entityData.Founders || [],
-          status: 'clean' as const,
-          lastChecked: new Date().toISOString(),
-          notes: '',
-          originalData: {
-            name: row.name,
-            inn: row.inn || '',
-            source: row.source
-          }
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error(`Error fetching details for ${row.name || row.inn}:`, error);
-      return null;
-    }
-  };
+  
 
   const handleConfirmImport = () => {
-    console.log('Confirming import with data:', previewData); // Debug log
-    previewData.forEach(data => {
-      const { originalData, ...entityData } = data;
-      const newEntity: Omit<CommonEntity, 'id'> = {
-        name: entityData.name,
-        inn: entityData.inn || '',
-        source: entityData.source,
-        CEO: entityData.CEO || '',
-        Founders: entityData.Founders || [],
-        status: 'clean',
-        lastChecked: new Date().toISOString(),
-        notes: ''
-      };
-      
-      console.log('Adding entity:', newEntity); // Debug log
-      onAddEntity(newEntity);
-    });
+    try {
+      // Process each preview data item
+      previewData.forEach(data => {
+        const newEntity: Omit<CommonEntity, 'id'> = {
+          name: data.name,
+          inn: data.inn || '',
+          source: data.source,
+          CEO: data.CEO || '',
+          Founders: data.Founders || [],
+          status: 'clean',
+          lastChecked: new Date().toISOString(),
+          notes: ''
+        };
+        
+        console.log('Adding entity:', newEntity); // Debug log
+        onAddEntity(newEntity);
+      });
 
-    toast.success(`Successfully imported ${previewData.length} entities`, {
-      duration: 3000,
-      position: 'top-right',
-      style: {
-        background: '#008766',
-        color: '#fff',
-        borderRadius: '8px',
-      },
-    });
+      // Show success message
+      toast.success(`Successfully imported ${previewData.length} entities`, {
+        duration: 3000,
+        position: 'top-right',
+        style: {
+          background: '#008766',
+          color: '#fff',
+          borderRadius: '8px',
+        },
+      });
 
-    setPreviewData([]);
-    setImportData([]);
-    setIsImportModalOpen(false);
+      // Clear the preview data and close the modal
+      setPreviewData([]);
+      setImportData([]);
+      setIsImportModalOpen(false);
+    } catch (error) {
+      console.error('Error during import:', error);
+      toast.error('Failed to import entities', {
+        duration: 4000,
+        position: 'top-right',
+        style: {
+          background: '#ef4444',
+          color: '#fff',
+          borderRadius: '8px',
+        },
+      });
+    }
   };
 
   return (
@@ -364,7 +394,14 @@ export function CommonEntitiesManager({
                   type="checkbox"
                   checked={selectedEntities.length === entities.length}
                   onChange={handleSelectAll}
-                  className="rounded border-gray-300 dark:border-gray-600 text-[#008766] focus:ring-[#008766] focus:ring-offset-0 bg-white dark:bg-gray-700"
+                  className="w-4 h-4 rounded border-gray-300 text-[#008766] 
+                    focus:ring-[#008766] focus:ring-offset-0 
+                    bg-white dark:bg-gray-700 
+                    border-gray-300 dark:border-gray-600
+                    checked:bg-[#008766] dark:checked:bg-[#008766]
+                    hover:bg-gray-100 dark:hover:bg-gray-600
+                    checked:hover:bg-[#008766] dark:checked:hover:bg-[#008766]
+                    accent-[#008766]"
                 />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -402,7 +439,14 @@ export function CommonEntitiesManager({
                     type="checkbox"
                     checked={selectedEntities.some(e => e.id === entity.id)}
                     onChange={() => handleSelectEntity(entity)}
-                    className="rounded border-gray-300 dark:border-gray-600 text-[#008766] focus:ring-[#008766] focus:ring-offset-0 bg-white dark:bg-gray-700"
+                    className="w-4 h-4 rounded border-gray-300 text-[#008766] 
+                      focus:ring-[#008766] focus:ring-offset-0 
+                      bg-white dark:bg-gray-700 
+                      border-gray-300 dark:border-gray-600
+                      checked:bg-[#008766] dark:checked:bg-[#008766]
+                      hover:bg-gray-100 dark:hover:bg-gray-600
+                      checked:hover:bg-[#008766] dark:checked:hover:bg-[#008766]
+                      accent-[#008766]"
                   />
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">

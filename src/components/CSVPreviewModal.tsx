@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { X, Download, Upload, RefreshCw } from 'lucide-react';
 import { transliterate } from 'transliteration';
 import type { PreviewData } from '../types';
+import { toast } from 'react-hot-toast';
 
 interface CSVPreviewModalProps {
   isOpen: boolean;
@@ -27,8 +28,25 @@ export function CSVPreviewModal({
   onFileSelect
 }: CSVPreviewModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [selectAll, setSelectAll] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (selectAll) {
@@ -95,6 +113,26 @@ export function CSVPreviewModal({
     </div>
   );
 
+  const handlePreviewClick = async () => {
+    if (selectedRows.length === 0 || isProcessing) return;
+    
+    try {
+      console.log('Selected rows:', selectedRows); // Debug log
+      await onImport(selectedRows);
+    } catch (error) {
+      console.error('Error during preview:', error);
+      toast.error('Failed to preview selected entries', {
+        duration: 4000,
+        position: 'top-right',
+        style: {
+          background: '#ef4444',
+          color: '#fff',
+          borderRadius: '8px',
+        },
+      });
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -112,25 +150,26 @@ export function CSVPreviewModal({
           </button>
         </div>
 
-        <div className="mb-6 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={onDownloadSample}
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center"
-            >
-              <Download className="w-4 h-4 mr-1" />
-              Download Sample Template
-            </button>
+        <div className="mb-4 flex justify-between items-center">
+          <div className="flex flex-col space-y-1">
             <label className="flex items-center px-4 py-2 bg-[#008766] text-white rounded-md hover:bg-[#007055] cursor-pointer">
               <Upload className="w-4 h-4 mr-2" />
               Select CSV File
               <input
+                ref={fileInputRef}
                 type="file"
                 accept=".csv"
                 className="hidden"
                 onChange={onFileSelect}
               />
             </label>
+            <button
+              onClick={onDownloadSample}
+              className="flex items-center px-4 py-1.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
+            >
+              <Download className="w-4 h-4 mr-1" />
+              Download Sample Template
+            </button>
           </div>
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {selectedRows.length} rows selected
@@ -223,7 +262,7 @@ export function CSVPreviewModal({
             </button>
           ) : (
             <button
-              onClick={() => onImport(selectedRows)}
+              onClick={handlePreviewClick}
               disabled={selectedRows.length === 0 || isProcessing}
               className={`flex items-center px-4 py-2 rounded-lg text-white
                 ${selectedRows.length === 0 || isProcessing

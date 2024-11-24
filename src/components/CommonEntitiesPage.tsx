@@ -10,6 +10,7 @@ interface CommonEntitiesPageProps {
   entities: CommonEntity[];
   onDeleteEntity: (id: string) => void;
   onUpdateEntity: (id: string, updates: Partial<CommonEntity>) => void;
+  onAddEntity: (entity: Omit<CommonEntity, 'id'>) => void; // Add this line
 }
 
 export function CommonEntitiesPage({
